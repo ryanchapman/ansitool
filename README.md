@@ -290,3 +290,12 @@ setup and with no dependencies on having a master server :)
 Enjoy.  Please send feedback.
 
 
+## TODO
+
+# Cryptographic signing
+
+We need a way to verify pack.bash files have not been tampered with in transit.  Asymmetric keys (ECC or RSA) are the only way to go.  Maybe use GPG.  The tricky part will be embedding the signature into the pack.bash file.  
+
+Maybe compute a signature and add it to the last line of pack.bash.  To verify, pull line 1 through lastline-1 out and pass that to gpg. When we extract the tar.gz file, exclude the last line.
+
+
