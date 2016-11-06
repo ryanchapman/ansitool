@@ -228,8 +228,8 @@ rchapman@dev1:~/ansitool#
 Now, copy the pack.bash file to the remote machine you want to run the playbooks:
 
 ```
-rchapman@dev1:~/ansitool# scp pack.bash rchapman@dev2:
-rchapman@dev2's password:
+rchapman@dev1:~/ansitool# scp pack.bash rchapman@prod1:
+rchapman@prod1's password:
 tput: No value for $TERM and no -T specified
 pack.bash                                                                                                                                        100% 5373     5.3KB/s   00:00
 rchapman@dev1:~/ansitool#
@@ -242,12 +242,12 @@ Note that it will check to see if ansible is at least 2.2 and attempt to install
 if it is not.  As long as you are running as root on Ubuntu, it should all just work (hopefully).
 
 ```
-rchapman@dev2:~/tmp# ls -l
+rchapman@prod1:~/tmp# ls -l
 total 8
 -rw-r--r-- 1 root root 5373 Nov  6 03:12 pack.bash
-rchapman@dev2:~/tmp#
-rchapman@dev2:~/tmp#
-rchapman@dev2:~/tmp# bash pack.bash
+rchapman@prod1:~/tmp#
+rchapman@prod1:~/tmp#
+rchapman@prod1:~/tmp# bash pack.bash
 Extracting files into /tmp/k2gd9s
 ./
 ./hosts
@@ -279,7 +279,7 @@ Nov 06 03:24:23.297940364 UTC ansitool[8782]: ansible-playbook --inventory-file 
 
 cd /root/tmp
 Cleaning up directory /tmp/k2gd9s
-rchapman@dev2:~/tmp#
+rchapman@prod1:~/tmp#
 ```
 
 ### Done
