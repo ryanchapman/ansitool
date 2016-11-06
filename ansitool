@@ -2,14 +2,14 @@
 #
 # ansitool - Tool to build standalone Ansible packages
 #
-# Takes an ansible diretory and packages it up into a single file that
+# Takes an ansible directory and packages it up into a single file that
 # can be copied to remote hosts and executed.  Keeps things simple:
 #  1. You can use this tool on the actual machine you are trying to automate
 #     and iterate over your process.  Once you are happy, copy the directory
 #     structure to source control.
-#  2. This tool can be integrated into your continuous build environemnt
+#  2. This tool can be integrated into your continuous build environment
 #     (e.g. TravisCI, CircleCI, Jenkins, etc.) since it isn't coupled to
-#     a central server (like s*lt does).
+#     a central server (like s*lt and p*pp*t require).
 #
 #  This really should be rewritten in golang, but for now it's bash because
 #  it's fast to write.
@@ -52,11 +52,6 @@ CYAN="$(tput setaf 14 0)"
 
 function logit
 {
-    logit_raw "${BOLD}${1}${CLR}"
-}
-
-function logit_raw
-{
     if [[ "${1}" == "FATAL" ]]; then
         fatal="FATAL"
         shift
@@ -83,7 +78,7 @@ function _exec
     else
         msg="${BOLD}${GREEN}$*${CLR}${GREEN} returned $rc${CLR}"
     fi
-    logit_raw "$msg"
+    logit "${BOLD}$msg${CLR}"
     # fail hard and fast
     if [[ $rc != 0 && $errors_fatal == $TRUE ]]; then
         pwd
@@ -132,21 +127,47 @@ function deps
     fi
 }
 
+function newrole
+{
+    local rolename="$1"
+    if [[ -d roles/$rolename ]]; then
+        logit FATAL "Role $rolename already exists."
+    fi
+    mkdir -p roles/$rolename/
+    mkdir -p roles/$rolename/files
+    mkdir -p roles/$rolename/tasks
+    file_append roles/$rolename/tasks/main.yml "---"
+    file_append roles/$rolename/tasks/main.yml "- name: Display all variables for localhost"
+    file_append roles/$rolename/tasks/main.yml "  debug: var=hostvars[inventory_hostname] verbosity=3"
+}
+
 function new
 {
-    [[ -f main.yml ]] && rm -f main.yml
-    file_append main.yml "---"
-    file_append main.yml "- hosts: localhost"
-    file_append main.yml "  roles:"
-    file_append main.yml "    - main_role"
-    file_append hosts "[targets]"
-    file_append hosts "localhost    ansible_connection=local"
-    mkdir -p roles/main_role/files
-    mkdir -p roles/main_role/tasks
-    file_append roles/main_role/tasks/main.yml "---"
-    file_append roles/main_role/tasks/main.yml "- name: Display all variables for localhost"
-    file_append roles/main_role/tasks/main.yml "  debug: var=hostvars[inventory_hostname] verbosity=3"
-    logit "New ansible application with role main_role created."
+    if [[ "$1" == "role" ]]; then
+        if [[ "$2" == "" ]]; then
+            logit FATAL "You must specify the new role you want to create ($(basename $0) new role rolename)"
+        fi
+        newrole "$2"
+        logit "New ansible role $2 created."
+    else
+        if [[ -f main.yml ]]; then
+            logit FATAL "Cannot create new application. main.yml already exists. Remove it manually if you'd like to create a new application."
+        fi
+        if [[ -f hosts ]]; then
+            logit FATAL "Cannot create new application. hosts already exists. Remove it manually if you'd like to create a new application."
+        fi
+        if [[ -d roles/main_role ]]; then
+            logit FATAL "Cannot create new application. Role main_role already exists. Remove it manually if you'd like to create a new application."
+        fi
+        file_append main.yml "---"
+        file_append main.yml "- hosts: localhost"
+        file_append main.yml "  roles:"
+        file_append main.yml "    - main_role"
+        file_append hosts "[targets]"
+        file_append hosts "localhost    ansible_connection=local"
+        newrole main_role
+        logit "New ansible application with role main_role created."
+    fi
 }
 
 function pack
@@ -197,12 +218,13 @@ function run
 
 function usage
 {
-    echo "usage: $(basename $0) command [arguments]"
+    echo "usage: $(basename $0) <command> [arguments]"
     echo
     echo "Commands:"
     echo
     echo "    deps            Install dependencies on local machine (latest Ansible)"
     echo "    new             Create a new ansible standalone application"
+    echo "    new role <name> Create a new role in the directory ./roles/name/"
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
     echo "    run debug [N]   Run the standalond ansible application in debug mode locally at verbosity level N (default=3)."
