@@ -292,7 +292,7 @@ Enjoy.  Please send feedback.
 
 ## TODO
 
-# Cryptographic signing
+### Cryptographic signing
 
 We need a way to verify pack.bash files have not been tampered with in transit.  Asymmetric keys (ECC or RSA) are the only way to go.  Maybe use GPG.  The tricky part will be embedding the signature into the pack.bash file.  
 
