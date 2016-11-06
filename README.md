@@ -1,6 +1,8 @@
 
 # Ansitool
 
+(pronounced ann-seh-tool like Ansible is pronounced ann-seh-bul)
+
 A tool for building a standalone executable that can run Ansible recipes locally.  
 
 ## Usage
