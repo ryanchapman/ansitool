@@ -1,0 +1,240 @@
+#!/bin/bash -
+#
+# ansitool - Tool to build standalone Ansible packages
+#
+# Takes an ansible diretory and packages it up into a single file that
+# can be copied to remote hosts and executed.  Keeps things simple:
+#  1. You can use this tool on the actual machine you are trying to automate
+#     and iterate over your process.  Once you are happy, copy the directory
+#     structure to source control.
+#  2. This tool can be integrated into your continuous build environemnt
+#     (e.g. TravisCI, CircleCI, Jenkins, etc.) since it isn't coupled to
+#     a central server (like s*lt does).
+#
+#  This really should be rewritten in golang, but for now it's bash because
+#  it's fast to write.
+#
+# Ryan Chapman, ryan@rchapman.org
+# Sun Nov  6 00:10:54 UTC 2016
+#
+# Copyright (C) 2016 Ryan A. Chapman. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   1. Redistributions of source code must retain the above copyright notice,
+#      this list of conditions and the following disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above copyright notice,
+#      this list of conditions and the following disclaimer in the documentation
+#      and/or other materials provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+TRUE=0
+FALSE=1
+
+BOLD="$(tput bold)"
+CLR="$(tput sgr0)"
+RED="$(tput setaf 1 0)"
+GREEN="$(tput setaf 10 0)"
+CYAN="$(tput setaf 14 0)"
+
+function logit
+{
+    logit_raw "${BOLD}${1}${CLR}"
+}
+
+function logit_raw
+{
+    if [[ "${1}" == "FATAL" ]]; then
+        fatal="FATAL"
+        shift
+    fi
+    echo -n "$(date '+%b %d %H:%M:%S.%N %Z') $(basename -- $0)[$$]: "
+    if [[ "${fatal}" == "FATAL" ]]; then echo -n "${RED}${fatal} "; fi
+    echo "$*"
+    if [[ "${fatal}" == "FATAL" ]]; then echo -n "${CLR}"; exit 1; fi
+}
+
+function _exec
+{
+    if [[ $1 == fatal ]]; then
+        errors_fatal=$TRUE
+    else
+        errors_fatal=$FALSE
+    fi
+    shift
+    logit "${BOLD}$*${CLR}"
+    eval "$*"
+    rc=$?
+    if [[ $rc != 0 ]]; then
+        msg="${BOLD}${RED}$*${CLR}${RED} returned $rc${CLR}"
+    else
+        msg="${BOLD}${GREEN}$*${CLR}${GREEN} returned $rc${CLR}"
+    fi
+    logit_raw "$msg"
+    # fail hard and fast
+    if [[ $rc != 0 && $errors_fatal == $TRUE ]]; then
+        pwd
+        exit 1
+    fi
+    return $rc
+}
+
+function exec_ignerr
+{
+    _exec warn $*
+}
+
+function exec
+{
+    _exec fatal $*
+}
+
+function file_append
+{
+    local file="${1}"
+    local str="${2}"
+    echo "${str}" >> ${file}
+}
+
+function deps
+{
+    logit "Checking if we need to install a version of ansible newer than 2.2"
+    if ansible-playbook --version | grep ansible-playbook | egrep '(2\.[23456789]|[3-9]\.)' &>/dev/null; then
+        logit "Checking if we need to install a version of ansible newer than 2.2: not needed."
+    else
+        logit "Checking if we need to install a version of ansible newer than 2.2: yes"
+        if which lsb_release &>/dev/null; then
+            if [[ $(lsb_release -a) =~ "Ubuntu" ]]; then
+                logit "Installing latest version of Ansible"
+                exec "sudo apt-get -y install software-properties-common"
+                exec "sudo apt-add-repository -y ppa:ansible/ansible"
+                exec "sudo apt-get -y update"
+                exec "sudo apt-get -y install ansible"
+                logit "Installing latest version of Ansible: done"
+            fi
+        else
+            logit FATAL "Don't know how to install ansible on your distribution of Linux.  Feel free to add support in the deps() function"
+        fi
+        logit "Checking if we need to install a version of ansible newer than 2.2: done."
+    fi
+}
+
+function new
+{
+    [[ -f main.yml ]] && rm -f main.yml
+    file_append main.yml "---"
+    file_append main.yml "- hosts: localhost"
+    file_append main.yml "  roles:"
+    file_append main.yml "    - main_role"
+    file_append hosts "[targets]"
+    file_append hosts "localhost    ansible_connection=local"
+    mkdir -p roles/main_role/files
+    mkdir -p roles/main_role/tasks
+    file_append roles/main_role/tasks/main.yml "---"
+    file_append roles/main_role/tasks/main.yml "- name: Display all variables for localhost"
+    file_append roles/main_role/tasks/main.yml "  debug: var=hostvars[inventory_hostname] verbosity=3"
+    logit "New ansible application with role main_role created."
+}
+
+function pack
+{
+    local packfile=$(mktemp /tmp/XXX-XXX.tar.gz)
+    logit "Building pack in $packfile"
+    exec "if [[ -f pack.bash ]]; then rm -f pack.bash; fi"
+    exec "tar zcvf $packfile ."
+    file_append pack.bash "#!/bin/bash -"
+    file_append pack.bash "tmpdir=\$(mktemp -d /tmp/XXXXXX)"
+    file_append pack.bash "mkdir -p \$tmpdir"
+    file_append pack.bash "echo \"Extracting files into \$tmpdir\""
+    file_append pack.bash "SELF=\$(pwd)/\$0"
+    file_append pack.bash "SKIP=\$(awk '/^__BEGIN_TARBALL__/ { print NR + 1; exit 0; }' \$SELF)"
+    file_append pack.bash "tail -n +\$SKIP \$SELF | tar -C \$tmpdir -zxvf -"
+    file_append pack.bash "oldcwd=\$(pwd)"
+    file_append pack.bash "echo cd \$tmpdir"
+    file_append pack.bash "cd \$tmpdir"
+    file_append pack.bash "if ansible-playbook --version | grep ansible-playbook | egrep '(2\.[23456789]|[3-9]\.)' &>/dev/null; then"
+    file_append pack.bash "  echo \"skipping update of ansible, not needed (you have at least version 2.2)\""
+    file_append pack.bash "else"
+    file_append pack.bash "  echo sudo bash ansitool deps"
+    file_append pack.bash "  sudo bash ansitool deps"
+    file_append pack.bash "fi"
+    file_append pack.bash "echo sudo bash ansitool run"
+    file_append pack.bash "sudo bash ansitool run"
+    file_append pack.bash "echo cd \$oldcwd"
+    file_append pack.bash "cd \$oldcwd"
+    file_append pack.bash "[ -d \${tmpdir} ] && echo \"Cleaning up directory \${tmpdir}\" && rm -rf \${tmpdir:-/tmp/XXXXXXXX/XXXXXX}"
+    file_append pack.bash "exit 0"
+    file_append pack.bash "__BEGIN_TARBALL__"
+    exec "cat $packfile >> pack.bash"
+    exec "rm -f $packfile"
+    logit "Building pack in $packfile: done"
+}
+
+function run
+{
+    local param="${1}"
+    local verbosity="${2:-3}"
+    local extra_args=""
+    if [[ "$param" =~ "debug" ]]; then
+        extra_args="-"
+        extra_args+="$(i=0; while [[ $i != $verbosity ]]; do printf "v"; i=$((i+1)); done)"
+    fi
+    exec "ansible-playbook --inventory-file ./hosts main.yml ${extra_args}"
+}
+
+function usage
+{
+    echo "usage: $(basename $0) command [arguments]"
+    echo
+    echo "Commands:"
+    echo
+    echo "    deps            Install dependencies on local machine (latest Ansible)"
+    echo "    new             Create a new ansible standalone application"
+    echo "    pack            Builds a new ansible pack for distribution"
+    echo "    run             Run the standalone ansible application locally"
+    echo "    run debug [N]   Run the standalond ansible application in debug mode locally at verbosity level N (default=3)."
+    echo
+}
+
+#################################
+# main
+#################################
+
+function main () {
+    if [[ "${1}" == "" ]]; then
+        usage
+        exit 1
+    fi
+    func_to_exec=${1}
+    type ${func_to_exec} 2>&1 | grep -q 'function' >&/dev/null || {
+        logit "$(basename $0): ERROR: function '${func_to_exec}' not found."
+        usage
+        exit 1
+    }
+
+    shift
+    ${func_to_exec} $*
+    echo
+}
+
+# did someone source this file or execute it directly?  If not sourced, then we are responsible for
+# executing main().  Files sourcing this one are responsible for calling main()
+sourced=$FALSE
+[ "$0" = "$BASH_SOURCE" ] || sourced=$TRUE
+
+if [[ $sourced == $FALSE ]]; then
+    main $*
+fi
