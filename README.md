@@ -16,6 +16,8 @@ and fast iteration, then copy the playbooks into your source control once you ar
 ## Example
 
 ![alt tag](https://raw.githubusercontent.com/ryanchapman/ansitool/images/ansitool.png)
+
+
 Start off with just ansitool in a directory
 
 ```
