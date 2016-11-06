@@ -1,7 +1,7 @@
 
 # Ansitool
 
-A tool for building standalone binaries that can run Ansible recipes locally.  
+A tool for building a standalone executable that can run Ansible recipes locally.  
 
 ## Usage
 
