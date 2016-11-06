@@ -20,7 +20,7 @@ and fast iteration, then copy the playbooks into your source control once you ar
 
 Start off with just ansitool in a directory
 
-```bash
+```
 rchapman@dev1:~/ansitool# ls -l
 total 8
 -rwxr-xr-x 1 root root 6672 Nov  6 02:34 ansitool
@@ -32,7 +32,7 @@ You'll need to run `ansitool deps` to make sure all dependencies are installed. 
 to install the latest ansible.  It requires Ubuntu; however, it wouldn't be very difficult to add other distributions. It's just that I don't have access to anything else at the moment, nor do I have the time.  Feel free to send me a pull request if you do add additional distros.
 As long as you have ansible version 2.2 or better, you don't have to run `ansitool deps`.
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool deps
 Nov 06 03:19:49.622836437 UTC ansitool[7303]: Checking if we need to install a version of ansible newer than 2.2
 ./ansitool: line 91: ansible-playbook: command not found
@@ -98,7 +98,7 @@ rchapman@dev1:~/ansitool#
 
 If your system doesn't need ansible updated, you see something like this:
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool deps
 Nov 06 03:20:44.129356568 UTC ansitool[8210]: Checking if we need to install a version of ansible newer than 2.2
 Nov 06 03:20:44.365667927 UTC ansitool[8210]: Checking if we need to install a version of ansible newer than 2.2: not needed.
@@ -110,7 +110,7 @@ rchapman@dev1:~/ansitool#
 
 Create a new project
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool new
 Nov 06 03:00:58.866700157 UTC ansitool[3350]: New ansible application with role main_role created.
 
@@ -128,7 +128,7 @@ rchapman@dev1:~/ansitool#
 Run the project.  By default, the main_role role has a task that prints out host variables if the verbosity level is 3 or greater.
 The default verbosity is 0, so `ansitool run` doesn't print host variables:
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool run
 Nov 06 03:07:06.244846439 UTC ansitool[4598]: ansible-playbook --inventory-file ./hosts main.yml
 
@@ -152,7 +152,7 @@ rchapman@dev1:~/ansitool#
 
 Running `ansitool run debug` sets the verbosity level to 3, which causes host variables to print:
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool run debug
 Nov 06 03:09:19.483271341 UTC ansitool[4964]: ansible-playbook --inventory-file ./hosts main.yml -vvv
 Using /etc/ansible/ansible.cfg as config file
@@ -197,7 +197,7 @@ rchapman@dev1:~/ansitool#
 
 Running `ansitool pack` builds pack.bash, which is just a bash script with an embedded tar.gz file in it
 
-```bash
+```
 rchapman@dev1:~/ansitool# ./ansitool pack
 Nov 06 03:12:48.142904365 UTC ansitool[5526]: Building pack in /tmp/XXX-HPi.tar.gz
 Nov 06 03:12:48.145028680 UTC ansitool[5526]: if [[ -f pack.bash ]]; then rm -f pack.bash; fi
@@ -227,7 +227,7 @@ rchapman@dev1:~/ansitool#
 
 Now, copy the pack.bash file to the remote machine you want to run the playbooks:
 
-```bash
+```
 rchapman@dev1:~/ansitool# scp pack.bash rchapman@prod1:
 rchapman@prod1's password:
 tput: No value for $TERM and no -T specified
@@ -241,7 +241,7 @@ On the remote machine where you want to run your playbooks, execute `bash pack.b
 Note that it will check to see if ansible is at least 2.2 and attempt to install it 
 if it is not.  As long as you are running as root on Ubuntu, it should all just work (hopefully).
 
-```bash
+```
 rchapman@prod1:~/tmp# ls -l
 total 8
 -rw-r--r-- 1 root root 5373 Nov  6 03:12 pack.bash
