@@ -175,7 +175,7 @@ function pack
     local packfile=$(mktemp /tmp/XXX-XXX.tar.gz)
     logit "Building pack in $packfile"
     exec "if [[ -f pack.bash ]]; then rm -f pack.bash; fi"
-    exec "tar zcvf $packfile ."
+    exec "tar --exclude=.git --exclude=*.swp -zcvf $packfile ."
     file_append pack.bash "#!/bin/bash -"
     file_append pack.bash "tmpdir=\$(mktemp -d /tmp/XXXXXX)"
     file_append pack.bash "mkdir -p \$tmpdir"
