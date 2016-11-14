@@ -228,9 +228,6 @@ function run
         trap "rm -f ${tmpf} ${tmpf}.retry" SIGINT SIGTERM EXIT
     fi
     exec "ansible-playbook --inventory-file ./hosts ${playbook_yaml} ${extra_args}"
-    if [[ "${post}" != "" ]]; then
-        exec "$post"
-    fi
 }
 
 function usage
