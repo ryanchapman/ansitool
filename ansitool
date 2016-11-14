@@ -175,7 +175,7 @@ function pack
     local packfile=$(mktemp /tmp/XXX-XXX.tar.gz)
     logit "Building pack in $packfile"
     exec "if [[ -f pack.bash ]]; then rm -f pack.bash; fi"
-    exec "tar --exclude=.git --exclude=*.swp -zcvf $packfile ."
+    exec "tar zcvf $packfile ."
     file_append pack.bash "#!/bin/bash -"
     file_append pack.bash "tmpdir=\$(mktemp -d /tmp/XXXXXX)"
     file_append pack.bash "mkdir -p \$tmpdir"
@@ -209,11 +209,28 @@ function run
     local param="${1}"
     local verbosity="${2:-3}"
     local extra_args=""
+    local playbook_yaml=""
+    local tmpf=""
+    local role_name=""
+    local post=""
     if [[ "$param" =~ "debug" ]]; then
         extra_args="-"
         extra_args+="$(i=0; while [[ $i != $verbosity ]]; do printf "v"; i=$((i+1)); done)"
+        playbook_yaml="main.yml"
+    elif [[ "$param" =~ "role" ]]; then
+        role_name="${2}"
+        tmpf="$(mktemp ./XXXXXXX)"
+        file_append $tmpf "---"
+        file_append $tmpf "- hosts: localhost"
+        file_append $tmpf "  roles:"
+        file_append $tmpf "    - $role_name"
+        playbook_yaml="$tmpf"
+        trap "rm -f ${tmpf} ${tmpf}.retry" SIGINT SIGTERM EXIT
     fi
-    exec "ansible-playbook --inventory-file ./hosts main.yml ${extra_args}"
+    exec "ansible-playbook --inventory-file ./hosts ${playbook_yaml} ${extra_args}"
+    if [[ "${post}" != "" ]]; then
+        exec "$post"
+    fi
 }
 
 function usage
@@ -227,7 +244,8 @@ function usage
     echo "    new role <name> Create a new role in the directory ./roles/name/"
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
-    echo "    run debug [N]   Run the standalond ansible application in debug mode locally at verbosity level N (default=3)."
+    echo "    run debug [N]   Run the standalone ansible application in debug mode locally at verbosity level N (default=3)"
+    echo "    run role <name> Run the standalone ansible application locallyi, but only the role specified"
     echo
 }
 
