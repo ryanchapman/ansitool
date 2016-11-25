@@ -259,7 +259,7 @@ function usage
     echo "    new role <name> Create a new role in the directory ./roles/name/"
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
-    echo "    run debug [N]   Run the standalond ansible application in debug mode locally at verbosity level N (default=3)."
+    echo "    run debug [N]   Run the standalone ansible application in debug mode locally at verbosity level N (default=3)."
     echo "    run role <name> Run the standalone ansible application locallyi, but only the role specified"
     echo "    update          Update to the latest version of ansitool"
     echo
