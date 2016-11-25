@@ -301,3 +301,7 @@ We need a way to verify pack.bash files have not been tampered with in transit. 
 Maybe compute a signature and add it to the last line of pack.bash.  To verify, pull line 1 through lastline-1 out and pass that to gpg. When we extract the tar.gz file, exclude the last line.
 
 
+### Signed updates
+
+Software updates should be cryptographically signed
+

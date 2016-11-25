@@ -50,6 +50,8 @@ RED="$(tput setaf 1 0)"
 GREEN="$(tput setaf 10 0)"
 CYAN="$(tput setaf 14 0)"
 
+UPDATE_URL="https://raw.githubusercontent.com/ryanchapman/ansitool/master/ansitool"
+
 function logit
 {
     if [[ "${1}" == "FATAL" ]]; then
@@ -107,7 +109,7 @@ function file_append
 function deps
 {
     logit "Checking if we need to install a version of ansible newer than 2.2"
-    if ansible-playbook --version | grep ansible-playbook | egrep '(2\.[23456789]|[3-9]\.)' &>/dev/null; then
+    if (ansible-playbook --version | grep ansible-playbook | egrep '(2\.[23456789]|[3-9]\.)') &>/dev/null; then
         logit "Checking if we need to install a version of ansible newer than 2.2: not needed."
     else
         logit "Checking if we need to install a version of ansible newer than 2.2: yes"
@@ -120,8 +122,12 @@ function deps
                 exec "sudo apt-get -y install ansible"
                 logit "Installing latest version of Ansible: done"
             fi
+        elif [[ "$(uname -a)" =~ "Darwin" ]]; then
+            logit "Installing latest version of Ansible"
+            exec "brew install ansible"
+            logit "Installing latest version of Ansible: done"
         else
-            logit FATAL "Don't know how to install ansible on your distribution of Linux.  Feel free to add support in the deps() function"
+            logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
         fi
         logit "Checking if we need to install a version of ansible newer than 2.2: done."
     fi
@@ -207,13 +213,22 @@ function pack
 function run
 {
     local param="${1}"
-    local verbosity="${2:-3}"
+    local verbosity="${2:-3}"   # default verbosity is 3
     local extra_args=""
     if [[ "$param" =~ "debug" ]]; then
         extra_args="-"
         extra_args+="$(i=0; while [[ $i != $verbosity ]]; do printf "v"; i=$((i+1)); done)"
     fi
     exec "ansible-playbook --inventory-file ./hosts main.yml ${extra_args}"
+}
+
+function update
+{
+    logit "Updating ansitool"
+    exec "curl -o ansitool.new ${UPDATE_URL}"
+    exec "mv ansitool.new ansitool"
+    exec "chmod +x ansitool"
+    logit "Updating ansitool: done"
 }
 
 function usage
@@ -228,6 +243,7 @@ function usage
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
     echo "    run debug [N]   Run the standalond ansible application in debug mode locally at verbosity level N (default=3)."
+    echo "    update          Update to the latest version of ansitool"
     echo
 }
 
