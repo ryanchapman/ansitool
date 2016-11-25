@@ -233,6 +233,9 @@ function run
         playbook_yaml="$tmpf"
         trap "rm -f ${tmpf} ${tmpf}.retry" SIGINT SIGTERM EXIT
     fi
+    if ! $(which ansible-playbook &>/dev/null); then
+        logit FATAL "ansible-playbook binary not found (have you installed Ansible with \"$(basename $0) deps\" yet?)"
+    fi
     exec "ansible-playbook --inventory-file ./hosts ${playbook_yaml} ${extra_args}"
 }
 
