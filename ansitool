@@ -247,11 +247,22 @@ function run
 
 function update
 {
-    logit "Updating ansitool"
-    exec "curl -o ansitool.new ${UPDATE_URL}"
-    exec "mv ansitool.new ansitool"
-    exec "chmod +x ansitool"
-    logit "Updating ansitool: done"
+    # trick to update.  If we try to overwrite the script we are running in, it will fail
+    # so fork off another copy in /tmp/XXXXX that has the ability to overwrite ansitool
+    if [[ "${1}" == "fork" ]]; then
+        sleep 1s    # give parent a second to exit so we can overwrite it
+        logit "Updating ansitool"
+        exec "curl -o ansitool.new ${UPDATE_URL}"
+        exec "mv ansitool.new ansitool"
+        exec "chmod +x ansitool"
+        logit "Updating ansitool: done"
+        exit 0
+    else
+        local tmpf=$(mktemp /tmp/XXXXXX)
+        exec "cp $0 ${tmpf}"
+        exec "bash ${tmpf} update fork &"
+        exit 0
+    fi
 }
 
 function usage
