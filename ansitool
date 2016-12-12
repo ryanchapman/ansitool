@@ -222,14 +222,13 @@ function run
     local param="${1}"
     local verbosity="${2:-3}"   # default verbosity is 3
     local extra_args=""
-    local playbook_yaml=""
+    local playbook_yaml="main.yml"
     local tmpf=""
     local role_name=""
     local post=""
     if [[ "$param" =~ "debug" ]]; then
         extra_args="-"
         extra_args+="$(i=0; while [[ $i != $verbosity ]]; do printf "v"; i=$((i+1)); done)"
-        playbook_yaml="main.yml"
     elif [[ "$param" =~ "role" ]]; then
         role_name="${2}"
         tmpf="$(mktemp ./XXXXXXX)"
@@ -267,7 +266,7 @@ function usage
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
     echo "    run debug [N]   Run the standalone ansible application in debug mode locally at verbosity level N (default=3)."
-    echo "    run role <name> Run the standalone ansible application locallyi, but only the role specified"
+    echo "    run role <name> Run the standalone ansible application locally, but only the role specified"
     echo "    update          Update to the latest version of ansitool"
     echo
 }
