@@ -114,20 +114,20 @@ function deps
     else
         logit "Checking if we need to install a version of ansible newer than 2.2: yes"
         if which lsb_release &>/dev/null; then
-            if [[ $(lsb_release -a) =~ "Ubuntu" ]]; then
+            if [[ $(lsb_release -a 2>&1) =~ "Ubuntu" ]]; then
                 logit "Installing latest version of Ansible"
                 exec "sudo apt-get -y install software-properties-common"
                 exec "sudo apt-add-repository -y ppa:ansible/ansible"
                 exec "sudo apt-get -y update"
                 exec "sudo apt-get -y install ansible"
                 logit "Installing latest version of Ansible: done"
+            elif [[ "$(uname -a)" =~ "Darwin" ]]; then
+                logit "Installing latest version of Ansible"
+                exec "brew install ansible"
+                logit "Installing latest version of Ansible: done"
+            else
+                logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
             fi
-        elif [[ "$(uname -a)" =~ "Darwin" ]]; then
-            logit "Installing latest version of Ansible"
-            exec "brew install ansible"
-            logit "Installing latest version of Ansible: done"
-        else
-            logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
         fi
         logit "Checking if we need to install a version of ansible newer than 2.2: done."
     fi
