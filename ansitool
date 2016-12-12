@@ -114,10 +114,17 @@ function deps
     else
         logit "Checking if we need to install a version of ansible newer than 2.2: yes"
         if which lsb_release &>/dev/null; then
-            if [[ $(lsb_release -a 2>&1) =~ "Ubuntu" ]]; then
+            if [[ "$(lsb_release -a 2>&1)" =~ "Ubuntu" ]]; then
                 logit "Installing latest version of Ansible"
                 exec "sudo apt-get -y install software-properties-common"
                 exec "sudo apt-add-repository -y ppa:ansible/ansible"
+                exec "sudo apt-get -y update"
+                exec "sudo apt-get -y install ansible"
+                logit "Installing latest version of Ansible: done"
+            elif [[ "$(lsb_release -a 2>&1)" =~ Debian.*(stretch|jessie) ]]; then
+                logit "Installing latest version of Ansible"
+                exec "sudo apt-get -y install software-properties-common"
+                exec "sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main'"
                 exec "sudo apt-get -y update"
                 exec "sudo apt-get -y install ansible"
                 logit "Installing latest version of Ansible: done"
