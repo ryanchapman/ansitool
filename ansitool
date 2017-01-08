@@ -186,7 +186,7 @@ function pack
     file_append pack.bash "tmpdir=\$(mktemp -d /tmp/XXXXXX)"
     file_append pack.bash "mkdir -p \$tmpdir"
     file_append pack.bash "echo \"Extracting files into \$tmpdir\""
-    file_append pack.bash "SELF=\$(pwd)/\$0"
+    file_append pack.bash "SELF=\$0"
     file_append pack.bash "SKIP=\$(awk '/^__BEGIN_TARBALL__/ { print NR + 1; exit 0; }' \$SELF)"
     file_append pack.bash "tail -n +\$SKIP \$SELF | tar -C \$tmpdir -zxvf -"
     file_append pack.bash "oldcwd=\$(pwd)"
