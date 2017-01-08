@@ -114,20 +114,27 @@ function deps
     else
         logit "Checking if we need to install a version of ansible newer than 2.2: yes"
         if which lsb_release &>/dev/null; then
-            if [[ $(lsb_release -a) =~ "Ubuntu" ]]; then
+            if [[ "$(lsb_release -a 2>&1)" =~ "Ubuntu" ]]; then
                 logit "Installing latest version of Ansible"
                 exec "sudo apt-get -y install software-properties-common"
                 exec "sudo apt-add-repository -y ppa:ansible/ansible"
                 exec "sudo apt-get -y update"
                 exec "sudo apt-get -y install ansible"
                 logit "Installing latest version of Ansible: done"
+            elif [[ "$(lsb_release -a 2>&1)" =~ Debian.*(stretch|jessie) ]]; then
+                logit "Installing latest version of Ansible"
+                exec "sudo apt-get -y install software-properties-common"
+                exec "sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main'"
+                exec "sudo apt-get -y update"
+                exec "sudo apt-get -y install ansible"
+                logit "Installing latest version of Ansible: done"
+            elif [[ "$(uname -a)" =~ "Darwin" ]]; then
+                logit "Installing latest version of Ansible"
+                exec "brew install ansible"
+                logit "Installing latest version of Ansible: done"
+            else
+                logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
             fi
-        elif [[ "$(uname -a)" =~ "Darwin" ]]; then
-            logit "Installing latest version of Ansible"
-            exec "brew install ansible"
-            logit "Installing latest version of Ansible: done"
-        else
-            logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
         fi
         logit "Checking if we need to install a version of ansible newer than 2.2: done."
     fi
@@ -215,14 +222,13 @@ function run
     local param="${1}"
     local verbosity="${2:-3}"   # default verbosity is 3
     local extra_args=""
-    local playbook_yaml=""
+    local playbook_yaml="main.yml"
     local tmpf=""
     local role_name=""
     local post=""
     if [[ "$param" =~ "debug" ]]; then
         extra_args="-"
         extra_args+="$(i=0; while [[ $i != $verbosity ]]; do printf "v"; i=$((i+1)); done)"
-        playbook_yaml="main.yml"
     elif [[ "$param" =~ "role" ]]; then
         role_name="${2}"
         tmpf="$(mktemp ./XXXXXXX)"
@@ -241,11 +247,22 @@ function run
 
 function update
 {
-    logit "Updating ansitool"
-    exec "curl -o ansitool.new ${UPDATE_URL}"
-    exec "mv ansitool.new ansitool"
-    exec "chmod +x ansitool"
-    logit "Updating ansitool: done"
+    # trick to update.  If we try to overwrite the script we are running in, it will fail
+    # so fork off another copy in /tmp/XXXXX that has the ability to overwrite ansitool
+    if [[ "${1}" == "fork" ]]; then
+        sleep 1s    # give parent a second to exit so we can overwrite it
+        logit "Updating ansitool"
+        exec "curl -o ansitool.new ${UPDATE_URL}"
+        exec "mv ansitool.new ansitool"
+        exec "chmod +x ansitool"
+        logit "Updating ansitool: done"
+        exit 0
+    else
+        local tmpf=$(mktemp /tmp/XXXXXX)
+        exec "cp $0 ${tmpf}"
+        exec "bash ${tmpf} update fork &"
+        exit 0
+    fi
 }
 
 function usage
@@ -260,7 +277,7 @@ function usage
     echo "    pack            Builds a new ansible pack for distribution"
     echo "    run             Run the standalone ansible application locally"
     echo "    run debug [N]   Run the standalone ansible application in debug mode locally at verbosity level N (default=3)."
-    echo "    run role <name> Run the standalone ansible application locallyi, but only the role specified"
+    echo "    run role <name> Run the standalone ansible application locally, but only the role specified"
     echo "    update          Update to the latest version of ansitool"
     echo
 }
