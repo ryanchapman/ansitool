@@ -205,7 +205,7 @@ function pack
     file_append pack.bash "  echo sudo bash ansitool deps"
     file_append pack.bash "  sudo bash ansitool deps"
     file_append pack.bash "fi"
-    file_append pack.bash "echo sudo bash ansitool run"
+    file_append pack.bash "echo sudo -E bash ansitool run"
     file_append pack.bash "sudo -E bash ansitool run"
     file_append pack.bash "rc=\$?"
     file_append pack.bash "echo cd \$oldcwd"
