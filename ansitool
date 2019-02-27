@@ -191,7 +191,7 @@ function pack
     exec "tar --exclude=.git --exclude=*.swp -zchvf $packfile ."
     file_append pack.bash "#!/bin/bash -"
     file_append pack.bash "export PYTHONUNBUFFERED=1"
-    file_append pack.bash "tmpdir=\$(mktemp -d ${TMPDIR:-/tmp}/XXXXXX)"
+    file_append pack.bash 'tmpdir=$(mktemp -d ${TMPDIR:-/tmp}/XXXXXX)'
     file_append pack.bash "mkdir -p \$tmpdir"
     file_append pack.bash "echo \"Extracting files into \$tmpdir\""
     file_append pack.bash "SELF=\$0"
