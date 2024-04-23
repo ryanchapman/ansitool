@@ -113,28 +113,45 @@ function deps
         logit "Checking if we need to install a version of ansible newer than 2.2: not needed."
     else
         logit "Checking if we need to install a version of ansible newer than 2.2: yes"
+        local os="UNKNOWN"
         if which lsb_release &>/dev/null; then
-            if [[ "$(lsb_release -a 2>&1)" =~ "Ubuntu" ]]; then
-                logit "Installing latest version of Ansible"
-                exec "sudo apt-get -y install software-properties-common"
-                exec "sudo apt-add-repository -y ppa:ansible/ansible"
-                exec "sudo apt-get -y update"
-                exec "sudo apt-get -y install ansible"
-                logit "Installing latest version of Ansible: done"
-            elif [[ "$(lsb_release -a 2>&1)" =~ Debian.*(stretch|jessie) ]]; then
-                logit "Installing latest version of Ansible"
-                exec "sudo apt-get -y install software-properties-common"
-                exec "sudo apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main'"
-                exec "sudo apt-get -y update"
-                exec "sudo apt-get -y install ansible"
-                logit "Installing latest version of Ansible: done"
-            elif [[ "$(uname -a)" =~ "Darwin" ]]; then
-                logit "Installing latest version of Ansible"
-                exec "brew install ansible"
-                logit "Installing latest version of Ansible: done"
+            os="$(lsb_release -a 2>&1)"
+        fi
+        if [[ -f /etc/os-release ]]; then
+            os="$(source /etc/os-release ; echo $ID)"
+        fi
+        local sudo=""
+        if [[ "$(id -un)" != "root" ]]; then
+            if which sudo &>/dev/null; then
+                sudo="sudo "
             else
-                logit FATAL "Don't know how to install ansible on operating system.  Feel free to add support in the deps() function"
+                logit FATAL "Cannot install ansible: you are not root, and I could not find the sudo program installed"
             fi
+        fi
+        if [[ "$os" =~ "Ubuntu" ]]; then
+            logit "Installing latest version of Ansible"
+            exec "${sudo}apt-get -y install software-properties-common"
+            exec "${sudo}apt-add-repository -y ppa:ansible/ansible"
+            exec "${sudo}apt-get -y update"
+            exec "${sudo}apt-get -y install ansible"
+            logit "Installing latest version of Ansible: done"
+        elif [[ "$os" =~ "amzn" ]]; then
+            logit "Installing latest version of Ansible"
+            exec "${sudo}yum -y install ansible"
+            logit "Installing latest version of Ansible: done"
+        elif [[ "$os" =~ Debian.*(stretch|jessie) ]]; then
+            logit "Installing latest version of Ansible"
+            exec "${sudo}apt-get -y install software-properties-common"
+            exec "${sudo}apt-add-repository -y 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main'"
+            exec "${sudo}apt-get -y update"
+            exec "${sudo}apt-get -y install ansible"
+            logit "Installing latest version of Ansible: done"
+        elif [[ "$os" =~ "Darwin" ]]; then
+            logit "Installing latest version of Ansible"
+            exec "brew install ansible"
+            logit "Installing latest version of Ansible: done"
+        else
+            logit FATAL "Don't know how to install ansible on this operating system.  Feel free to add support in the deps() function"
         fi
         logit "Checking if we need to install a version of ansible newer than 2.2: done."
     fi
